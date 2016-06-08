@@ -13,10 +13,10 @@ function signcasts_video_form_submit( $entry, $form ){
 	// this is the url for the video
 	// it gets put in the 'youtube_url' post meta by Gravity Forms
 	// Your Gravity Forms field must have the "Custom Field Name" option set to the existing field youtube_url
-	$url = get_post_meta($post_id, 'youtube_url', true);
+	$url = get_post_meta( $post_id, 'youtube_url', true );
 
 	// abort if there is no video.
-	if ( empty($url) ) {
+	if ( empty( $url ) ) {
 		return;
 	}
 
@@ -27,8 +27,8 @@ function signcasts_video_form_submit( $entry, $form ){
 	 */
 	require_once( ABSPATH . WPINC . '/class-oembed.php' );
 	$oembed = _wp_oembed_get_object();
-	$provider = $oembed->get_provider($url);
-	$data = $oembed->fetch($provider, $url);
+	$provider = $oembed->get_provider( $url );
+	$data = $oembed->fetch( $provider, $url );
 		// Data contains:
 		//     thumbnail_width
 		//     html ( the embed code )
@@ -53,36 +53,39 @@ function signcasts_video_form_submit( $entry, $form ){
 	 * Here we copy a bunch of stuff fron largo_featured_media_save
 	 * @link https://github.com/INN/Largo/blob/ddfd8d739c949aaabdab8cf40dd013ed62e670bd/inc/featured-media.php#L538
 	 */
-	if (!empty($data['attachment']))
-		set_post_thumbnail($data['id'], $data['attachment']);
-	else
-		delete_post_thumbnail($data['id']);
+	if ( !empty( $data['attachment'] ) ) {
+		set_post_thumbnail( $data['id'], $data['attachment'] );
+	} else {
+		delete_post_thumbnail( $data['id'] );
+	}
 
 	// Get rid of the old youtube_url post metadata while we're saving
-	// Largo keeps it around for compatibility, but tsetting it here doesn't actually affect the featured media.
-	if (!empty($url))
-			delete_post_meta($data['id'], 'youtube_url');
+	// Largo keeps it around for compatibility, but setting it here doesn't actually affect the featured media.
+	if ( !empty( $url ) ) {
+		delete_post_meta( $data['id'], 'youtube_url' );
+	}
 
 	// Set the featured image for embed or oembed types
-	if (isset($data['thumbnail_url']) && isset($data['thumbnail_type']) && $data['thumbnail_type'] == 'oembed')
-		$thumbnail_id = largo_media_sideload_image($data['thumbnail_url'], null);
-	else if (isset($data['attachment']))
+	if ( isset( $data['thumbnail_url'] ) && isset( $data['thumbnail_type'] ) && $data['thumbnail_type'] == 'oembed' ) {
+		$thumbnail_id = largo_media_sideload_image( $data['thumbnail_url'], null );
+	} else if ( isset( $data['attachment'] ) ) {
 		$thumbnail_id = $data['attachment'];
+	}
 	
 	// Skip the part of largo_featured_media_save dealing with galleries; it's not needed here
 
 	// set the attachment
 	// This is the image that is shown as the post thumbnail
-	if (isset($thumbnail_id)) {
-		update_post_meta($data['id'], '_thumbnail_id', $thumbnail_id);
-		$data['attachment_data'] = wp_prepare_attachment_for_js($thumbnail_id);
+	if ( isset( $thumbnail_id ) ) {
+		update_post_meta( $data['id'], '_thumbnail_id', $thumbnail_id );
+		$data['attachment_data'] = wp_prepare_attachment_for_js( $thumbnail_id );
 	}
 
 	// Don't save the post ID in post meta
 	$save = $data;
-	unset($save['id']);
+	unset( $save['id'] );
 
 	// Save what's sent over the wire as `featured_media` post meta
-	$ret = update_post_meta($data['id'], 'featured_media', $save);
+	$ret = update_post_meta( $data['id'], 'featured_media', $save );
 }
 add_filter( 'gform_after_submission_5', 'signcasts_video_form_submit', 10, 2 ); // '5' here should be replaced with the ID of the form you are using this on. The form ID can be found at /wp-admin/admin.php?page=gf_edit_forms
