@@ -7,12 +7,19 @@
  * @link https://www.gravityhelp.com/documentation/article/gform_after_submission/
  */
 function signcasts_video_form_submit( $entry, $form ){
-	//add the press releases post type to these posts
+	// making this accessible
 	$post_id = $entry['post_id'];
-	var_log($post_id);
 
+	// this is the url for the video
+	// it gets put in the 'youtube_url' post meta by Gravity Forms
+	// Your Gravity Forms field must have the "Custom Field Name" option set to the existing field youtube_url
 	$url = get_post_meta($post_id, 'youtube_url', true);
-	
+
+	// abort if there is no video.
+	if ( empty($url) ) {
+		return;
+	}
+
 	/**
 	 * Get the featured media's data
 	 * This essentially re-implements largo_fetch_video_oembed
@@ -36,7 +43,6 @@ function signcasts_video_form_submit( $entry, $form ){
 		//     version
 		//     provider_name
 		//     author_url
-	var_log($data);
 	$embed = $oembed->data2html($data, $url);
 	$data = array_merge(array('embed' => $embed), (array) $data);
 	$data['id'] = $post_id;
@@ -52,9 +58,9 @@ function signcasts_video_form_submit( $entry, $form ){
 	else
 		delete_post_thumbnail($data['id']);
 
-	// Get rid of the old youtube_url while we're saving
-	$youtube_url = get_post_meta($data['id'], 'youtube_url', true);
-	if (!empty($youtube_url))
+	// Get rid of the old youtube_url post metadata while we're saving
+	// Largo keeps it around for compatibility, but tsetting it here doesn't actually affect the featured media.
+	if (!empty($url))
 			delete_post_meta($data['id'], 'youtube_url');
 
 	// Set the featured image for embed or oembed types
@@ -66,6 +72,7 @@ function signcasts_video_form_submit( $entry, $form ){
 	// Skip the part of largo_featured_media_save dealing with galleries; it's not needed here
 
 	// set the attachment
+	// This is the image that is shown as the post thumbnail
 	if (isset($thumbnail_id)) {
 		update_post_meta($data['id'], '_thumbnail_id', $thumbnail_id);
 		$data['attachment_data'] = wp_prepare_attachment_for_js($thumbnail_id);
@@ -74,7 +81,6 @@ function signcasts_video_form_submit( $entry, $form ){
 	// Don't save the post ID in post meta
 	$save = $data;
 	unset($save['id']);
-
 
 	// Save what's sent over the wire as `featured_media` post meta
 	$ret = update_post_meta($data['id'], 'featured_media', $save);
